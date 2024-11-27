@@ -1,0 +1,21 @@
+
+VAR x, y, z, B : integer;
+VAR A2: integer;
+BEGIN
+READ d;
+x = 6;
+d = 100;
+END
+y = -x + 3;
+z = -(-x - y) * (x / y);
+A = 54 / 1;
+
+WRITE y;
+WRITE z;
+
+FOR i = 1 TO 10 DO BEGIN
+    WRITE i;
+
+END
+END
+
