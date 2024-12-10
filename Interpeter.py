@@ -138,6 +138,8 @@ class Parser:
 
     def parse_assignment(self):
         identifier = self.current_token[1]
+        if identifier not in symbol_table['identifiers']:
+            raise NameError(f"Переменная '{identifier}' не объявлена.")
         self.expect('IDENTIFIER')
         self.expect('OPERATOR', '=')
         value = self.parse_expression()
@@ -157,18 +159,23 @@ class Parser:
         self.expect('KEYWORD', 'BEGIN')
 
         saved_index = self.current_token_index
-        self.block_depth += 1  # Вложенный блок BEGIN/END
+        self.block_depth += 1  # Увеличиваем вложенность блока
+
         for i in range(start_value, end_value + 1):
             symbol_table['identifiers'][loop_var] = i
             self.current_token_index = saved_index
             self.current_token = self.tokens[self.current_token_index]
+
             while self.current_token and self.current_token[1] != 'END':
                 self.parse_statement()
                 if self.current_token and self.current_token[1] == ';':
                     self.expect('OPERATOR', ';')
 
+        if not self.current_token or self.current_token[1] != 'END':
+            raise SyntaxError("Ожидалось ключевое слово END для завершения цикла FOR.")
+
         self.expect('KEYWORD', 'END')
-        self.block_depth -= 1
+        self.block_depth -= 1  # Уменьшаем вложенность блока
 
     def parse_read(self):
         self.expect('KEYWORD', 'READ')
@@ -221,6 +228,8 @@ class Parser:
             return value
         elif self.current_token[0] == 'IDENTIFIER':
             identifier = self.current_token[1]
+            if identifier not in symbol_table['identifiers']:
+                raise NameError(f"Переменная '{identifier}' не объявлена.")
             self.expect('IDENTIFIER')
             return symbol_table['identifiers'].get(identifier, 0)
         elif self.current_token[1] == '(':
