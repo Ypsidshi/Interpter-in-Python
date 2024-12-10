@@ -108,18 +108,21 @@ class Parser:
     def parse_program(self):
         self.expect('KEYWORD', 'BEGIN')
         self.block_depth += 1  # Увеличиваем глубину блока
+
         while self.current_token and self.current_token[1] != 'END':
             self.parse_statement()
             if self.current_token and self.current_token[1] == ';':
                 self.expect('OPERATOR', ';')
-        if self.current_token is None:
+
+        if not self.current_token:
             raise SyntaxError("Программа завершена без ключевого слова END.")
+
         self.expect('KEYWORD', 'END')
         self.block_depth -= 1  # Уменьшаем глубину блока
 
-        # Проверка баланса блоков BEGIN/END
-        if self.block_depth < 0:
-            raise SyntaxError("Обнаружено больше ключевых слов END, чем BEGIN.")
+        # Если после `END` остались токены, это ошибка
+        if self.current_token:
+            raise SyntaxError("Код после закрытия блока END недопустим.")
 
     def parse_statement(self):
         if self.current_token[0] == 'IDENTIFIER':
@@ -233,11 +236,16 @@ class Parser:
 
     def expect(self, token_type, token_value=None):
         if self.current_token is None:
-            # Улучшенное сообщение об ошибке, если токенов больше нет
             raise SyntaxError(
-                f"Неожиданный конец программы. Ожидалось {token_type} {token_value if token_value else ''}.")
+                f"Неожиданный конец программы. Ожидалось {token_type} {token_value if token_value else ''}."
+            )
+
         if self.current_token[0] == token_type:
             if token_value is None or self.current_token[1] == token_value:
+                # Если встречается END вне контекста блока
+                if token_value == 'END' and self.block_depth == 0:
+                    raise SyntaxError("Ключевое слово END найдено вне блока BEGIN.")
+
                 self.current_token_index += 1
                 if self.current_token_index < len(self.tokens):
                     self.current_token = self.tokens[self.current_token_index]
@@ -247,6 +255,7 @@ class Parser:
                 raise SyntaxError(f"Ожидалось '{token_value}', но получено '{self.current_token[1]}'.")
         else:
             raise SyntaxError(f"Ожидался тип токена '{token_type}', но получено '{self.current_token[0]}'.")
+
 
 # Загрузка исходного кода из файла
 filename = "source.txt"  # Укажите имя файла с исходным кодом
